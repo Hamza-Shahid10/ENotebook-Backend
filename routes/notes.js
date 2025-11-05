@@ -1,4 +1,5 @@
 import { Router } from "express";
+import mongoose from "mongoose";
 import notesModel from "../models/NotesModel.js";
 import fetchUser from "../middleware/fetchUser.js";
 import { body, validationResult } from "express-validator";
@@ -34,6 +35,50 @@ router.post("/add-note", fetchUser, [
   } catch (error) {
     console.error(error.message);
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+//Router 3: Update a new note using: PUT "/api/notes/update-note/:id". login required
+router.put("/update-note/:id", fetchUser, async (req, res) => {
+  try {
+    const { title, description, tag } = req.body;
+    // create a new note object
+    const newNote = {};
+    if (title) newNote.title = title;
+    if (description) newNote.description = description;
+    if (tag) newNote.tag = tag;
+
+    // find a note by id and authozrize the user
+    const checkNote = await notesModel.findById(req.params.id);
+    if (!checkNote) return res.status(404).json({ message: "Note not found" });
+    if (checkNote.user.toString() !== req.user.id) return res.status(401).json({ message: "Not authorized" });
+
+    // update the note
+    const updatedNote = await notesModel.findByIdAndUpdate(req.params.id, { $set: newNote }, { new: true });
+    res.status(200).json({ message: "Note updated successfully", updatedNote });
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+//Router 4: Dekete a existing note using: DELETE "/api/notes/delete-note/:id". login required
+router.delete("/delete-note/:id", fetchUser, async (req, res) => {
+  try {
+    // find a note by id and authozrize the user
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ message: "Invalid note id" });
+    const note = await notesModel.findById(req.params.id);
+    if (!note) return res.status(404).json({ message: "Note not found" });
+
+    // check if the note belongs to the user
+    if (note.user.toString() !== req.user.id) return res.status(401).json({ message: "Not authorized" });
+
+    // update the note
+    const deletedNote = await notesModel.findByIdAndDelete(req.params.id);
+    res.status(200).json({ message: "Note deleted successfully", deletedNote });
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).json({ error: error.message });
   }
 });
 
