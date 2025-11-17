@@ -1,4 +1,5 @@
 import express from 'express'
+import cors from "cors";
 import connectToMongo from "./db.js"
 import authRoutes from "./routes/auth.js";  
 import notesRoutes from "./routes/notes.js";
@@ -8,6 +9,11 @@ const app = express()
 const port = 1010
 
 let users = []
+
+app.use(cors({
+  origin: ["http://localhost:5173", "https://enotebook-hamza.vercel.app"],
+  credentials: true
+}));
 
 app.use(express.json());
 connectToMongo();
@@ -95,5 +101,5 @@ app.delete("/users/:id", (req, res) => {
 
 //App listening
 app.listen(port, () => {
-    console.log(`ENotebook app listening on port ${port}`)
+    console.log(`ENotebook app listening on port http://localhost:${port}`)
 })
